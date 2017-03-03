@@ -1,6 +1,18 @@
 # crude fork of https://github.com/beyondscreen/node-rpi-ws281x-native to make it work with both PWM channels
 
-use:
+for PWM0 use:
+
+```javascript
+ws281x.init(pixelData.length) //defaults to PWM0
+```
+
+or
+
+```javascript
+ws281x.init(pixelData.length, {"gpioPin": 18})
+```
+
+for PWM1 use:
 
 ```javascript
 ws281x.init(pixelData.length, {"gpioPin": 13})
