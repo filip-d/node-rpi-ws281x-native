@@ -15,8 +15,8 @@ extern "C" {
 using namespace v8;
 
 #define DEFAULT_TARGET_FREQ     800000
-#define DEFAULT_CH1_GPIO_PIN        18
-#define DEFAULT_CH2_GPIO_PIN        13
+#define DEFAULT_CH0_GPIO_PIN        18
+#define DEFAULT_CH1_GPIO_PIN        13
 #define DEFAULT_DMANUM          5
 
 ws2811_t ledstring;
@@ -61,15 +61,17 @@ void render(const Nan::FunctionCallbackInfo<v8::Value>& info) {
  * exports.init(Number ledCount [, Object config]) - setup the configuration and initialize the library.
  */
 void init(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  activeChannel = 0;
+
   ledstring.freq    = DEFAULT_TARGET_FREQ;
   ledstring.dmanum  = DEFAULT_DMANUM;
 
-  channel0data.gpionum = DEFAULT_CH1_GPIO_PIN;
+  channel0data.gpionum = DEFAULT_CH0_GPIO_PIN;
   channel0data.invert = 0;
   channel0data.count = 0;
   channel0data.brightness = 255;
 
-  channel1data.gpionum = DEFAULT_CH2_GPIO_PIN;
+  channel1data.gpionum = 0;
   channel1data.invert = 0;
   channel1data.count = 0;
   channel1data.brightness = 255;
@@ -93,7 +95,7 @@ void init(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     Local<String>
         symFreq = Nan::New<String>("frequency").ToLocalChecked(),
         symDmaNum = Nan::New<String>("dmaNum").ToLocalChecked(),
-        symGpioPin = Nan::New<String>("gpioPin").ToLocalChecked(),
+        symPwmChannel = Nan::New<String>("pwmChannel").ToLocalChecked(),
         symInvert = Nan::New<String>("invert").ToLocalChecked(),
         symBrightness = Nan::New<String>("brightness").ToLocalChecked();
 
@@ -105,18 +107,17 @@ void init(const Nan::FunctionCallbackInfo<v8::Value>& info) {
       ledstring.dmanum = config->Get(symDmaNum)->Int32Value();
     }
 	
-    activeChannel = 0;  
-    if(config->HasOwnProperty(symGpioPin)) {
-	  int gpioPin = config->Get(symGpioPin)->Int32Value();
-	  if (gpioPin == DEFAULT_CH1_GPIO_PIN) {
-		activeChannel = 0;  
-	  } else if (gpioPin == DEFAULT_CH2_GPIO_PIN) {
-	    activeChannel = 1;  
-	  } else {
-		return Nan::ThrowTypeError("init(): invalid gpioPin number");
+    if(config->HasOwnProperty(symPwmChannel)) {
+	  int pwmChannel = config->Get(symPwmChannel)->Int32Value();
+	  if (pwmChannel == 1) {
+		activeChannel = 1;
+        channel0data.gpionum = 0;
+      	    channel1data.gpionum = DEFAULT_CH1_GPIO_PIN;
+      } else if (pwmChannel != 0) {
+		return Nan::ThrowTypeError("init(): invalid pwmChannel (has to be 0 or 1)");
 	  }
     }
-	ledstring.channel[activeChannel].count = info[0]->Int32Value();
+
 	if(config->HasOwnProperty(symInvert)) {
       ledstring.channel[activeChannel].invert = config->Get(symInvert)->Int32Value();
     }
@@ -125,6 +126,8 @@ void init(const Nan::FunctionCallbackInfo<v8::Value>& info) {
       ledstring.channel[activeChannel].brightness = config->Get(symBrightness)->Int32Value();
     }
   }
+
+  ledstring.channel[activeChannel].count = info[0]->Int32Value();       
 
   // FIXME: handle errors, throw JS-Exception
   int err = ws2811_init(&ledstring);

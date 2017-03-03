@@ -9,13 +9,13 @@ ws281x.init(numLeds) //defaults to PWM0
 or
 
 ```javascript
-ws281x.init(numLeds, {"gpioPin": 18})
+ws281x.init(numLeds, {"pwmChannel": 0})
 ```
 
 for PWM1 use:
 
 ```javascript
-ws281x.init(numLeds, {"gpioPin": 13})
+ws281x.init(numLeds, {"pwmChannel": 1})
 ```
 
 # control ws281x-LEDs with node.js
