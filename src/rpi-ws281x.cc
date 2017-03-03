@@ -15,13 +15,15 @@ extern "C" {
 using namespace v8;
 
 #define DEFAULT_TARGET_FREQ     800000
-#define DEFAULT_GPIO_PIN        18
+#define DEFAULT_CH1_GPIO_PIN        18
+#define DEFAULT_CH2_GPIO_PIN        13
 #define DEFAULT_DMANUM          5
 
 ws2811_t ledstring;
 ws2811_channel_t
   channel0data,
   channel1data;
+int activeChannel;
 
 
 /**
@@ -43,10 +45,10 @@ void render(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Local<Object> buffer = info[0]->ToObject();
 
   int numBytes = std::min((int)node::Buffer::Length(buffer),
-      4 * ledstring.channel[0].count);
+      4 * ledstring.channel[activeChannel].count);
 
   uint32_t* data = (uint32_t*) node::Buffer::Data(buffer);
-  memcpy(ledstring.channel[0].leds, data, numBytes);
+  memcpy(ledstring.channel[activeChannel].leds, data, numBytes);
 
   ws2811_wait(&ledstring);
   ws2811_render(&ledstring);
@@ -62,12 +64,12 @@ void init(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   ledstring.freq    = DEFAULT_TARGET_FREQ;
   ledstring.dmanum  = DEFAULT_DMANUM;
 
-  channel0data.gpionum = DEFAULT_GPIO_PIN;
+  channel0data.gpionum = DEFAULT_CH1_GPIO_PIN;
   channel0data.invert = 0;
   channel0data.count = 0;
   channel0data.brightness = 255;
 
-  channel1data.gpionum = 0;
+  channel1data.gpionum = DEFAULT_CH2_GPIO_PIN;
   channel1data.invert = 0;
   channel1data.count = 0;
   channel1data.brightness = 255;
@@ -83,8 +85,6 @@ void init(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   if(!info[0]->IsNumber()) {
     return Nan::ThrowTypeError("init(): argument 0 is not a number");
   }
-
-  ledstring.channel[0].count = info[0]->Int32Value();
 
   // second (optional) an Object
   if(info.Length() >= 2 && info[1]->IsObject()) {
@@ -104,17 +104,25 @@ void init(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     if(config->HasOwnProperty(symDmaNum)) {
       ledstring.dmanum = config->Get(symDmaNum)->Int32Value();
     }
-
+	
+    activeChannel = 0;  
     if(config->HasOwnProperty(symGpioPin)) {
-      ledstring.channel[0].gpionum = config->Get(symGpioPin)->Int32Value();
+	  int gpioPin = config->Get(symGpioPin)->Int32Value();
+	  if (gpioPin == DEFAULT_CH1_GPIO_PIN) {
+		activeChannel = 0;  
+	  } else if (gpioPin == DEFAULT_CH2_GPIO_PIN) {
+	    activeChannel = 1;  
+	  } else {
+		return Nan::ThrowTypeError("init(): invalid gpioPin number");
+	  }
     }
-
-    if(config->HasOwnProperty(symInvert)) {
-      ledstring.channel[0].invert = config->Get(symInvert)->Int32Value();
+	ledstring.channel[activeChannel].count = info[0]->Int32Value();
+	if(config->HasOwnProperty(symInvert)) {
+      ledstring.channel[activeChannel].invert = config->Get(symInvert)->Int32Value();
     }
 
     if(config->HasOwnProperty(symBrightness)) {
-      ledstring.channel[0].brightness = config->Get(symBrightness)->Int32Value();
+      ledstring.channel[activeChannel].brightness = config->Get(symBrightness)->Int32Value();
     }
   }
 
@@ -141,7 +149,7 @@ void setBrightness(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     return Nan::ThrowTypeError("setBrightness(): argument 0 is not a number");
   }
 
-  ledstring.channel[0].brightness = info[0]->Int32Value();
+  ledstring.channel[activeChannel].brightness = info[0]->Int32Value();
 
   info.GetReturnValue().SetUndefined();
 }
@@ -152,7 +160,7 @@ void setBrightness(const Nan::FunctionCallbackInfo<v8::Value>& info) {
  * (disable PWM, free DMA-pages etc).
  */
 void reset(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  memset(ledstring.channel[0].leds, 0, sizeof(*ledstring.channel[0].leds) * ledstring.channel[0].count);
+  memset(ledstring.channel[activeChannel].leds, 0, sizeof(*ledstring.channel[activeChannel].leds) * ledstring.channel[activeChannel].count);
 
   ws2811_render(&ledstring);
   ws2811_wait(&ledstring);

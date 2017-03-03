@@ -1,8 +1,12 @@
-# control ws281x-LEDs with node.js
+# crude fork of https://github.com/beyondscreen/node-rpi-ws281x-native to make it work with both PWM channels
 
-> if you happen to know C++ and node/iojs/V8, I would really appreciate any help 
-> and feedback on this module.
-> There is certainly lots of room for improvement.
+use:
+
+```javascript
+ws281x.init(pixelData.length, {"gpioPin": 13})
+```
+
+# control ws281x-LEDs with node.js
 
 This module provides native bindings to the
 [rpi_ws281x](https://github.com/jgarff/rpi_ws281x) library by Jeremy Garff to
