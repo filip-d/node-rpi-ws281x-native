@@ -111,8 +111,8 @@ void init(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 	  int pwmChannel = config->Get(symPwmChannel)->Int32Value();
 	  if (pwmChannel == 1) {
 		activeChannel = 1;
-        channel0data.gpionum = 0;
-      	    channel1data.gpionum = DEFAULT_CH1_GPIO_PIN;
+                ledstring.channel[0].gpionum = 0;
+      	        ledstring.channel[1].gpionum = DEFAULT_CH1_GPIO_PIN;
       } else if (pwmChannel != 0) {
 		return Nan::ThrowTypeError("init(): invalid pwmChannel (has to be 0 or 1)");
 	  }
