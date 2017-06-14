@@ -62,11 +62,11 @@ void render(const Nan::FunctionCallbackInfo<v8::Value>& info) {
  */
 void init(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   activeChannel = 0;
-
+  
   ledstring.freq    = DEFAULT_TARGET_FREQ;
   ledstring.dmanum  = DEFAULT_DMANUM;
 
-  channel0data.gpionum = DEFAULT_CH0_GPIO_PIN;
+  channel0data.gpionum = 0;
   channel0data.invert = 0;
   channel0data.count = 0;
   channel0data.brightness = 255;
@@ -96,6 +96,7 @@ void init(const Nan::FunctionCallbackInfo<v8::Value>& info) {
         symFreq = Nan::New<String>("frequency").ToLocalChecked(),
         symDmaNum = Nan::New<String>("dmaNum").ToLocalChecked(),
         symPwmChannel = Nan::New<String>("pwmChannel").ToLocalChecked(),
+		symGpioPin = Nan::New<String>("gpioPin").ToLocalChecked(),
         symInvert = Nan::New<String>("invert").ToLocalChecked(),
         symBrightness = Nan::New<String>("brightness").ToLocalChecked();
 
@@ -111,12 +112,16 @@ void init(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 	  int pwmChannel = config->Get(symPwmChannel)->Int32Value();
 	  if (pwmChannel == 1) {
 		activeChannel = 1;
-                ledstring.channel[0].gpionum = 0;
-      	        ledstring.channel[1].gpionum = DEFAULT_CH1_GPIO_PIN;
       } else if (pwmChannel != 0) {
 		return Nan::ThrowTypeError("init(): invalid pwmChannel (has to be 0 or 1)");
 	  }
     }
+	
+	if(config->HasOwnProperty(symGpioPin)) {
+		ledstring.channel[activeChannel].gpionum = config->Get(symGpioPin)->Int32Value();
+    } else {
+		ledstring.channel[activeChannel].gpionum = DEFAULT_CH0_GPIO_PIN;
+	}
 
 	if(config->HasOwnProperty(symInvert)) {
       ledstring.channel[activeChannel].invert = config->Get(symInvert)->Int32Value();
