@@ -1,3 +1,4 @@
 [submodule "src/rpi_ws281x"]
     path = src/rpi_ws281x
     url = https://github.com/filip-d/rpi_ws281x.git
+	branch = src/rpi_ws281x
